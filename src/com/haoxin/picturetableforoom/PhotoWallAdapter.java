@@ -1,7 +1,9 @@
 package com.haoxin.picturetableforoom;
 
+import java.io.BufferedInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
-
 import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
@@ -9,6 +11,7 @@ import java.util.Set;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.BitmapFactory.Options;
 import android.os.AsyncTask;
 import android.util.LruCache;
 import android.view.LayoutInflater;
@@ -279,11 +282,43 @@ public class PhotoWallAdapter extends ArrayAdapter<String> implements
 			HttpURLConnection con = null;
 			try
 			{
-				URL url = new URL(imageUrl);
-				con = (HttpURLConnection) url.openConnection();
-				con.setConnectTimeout(5 * 1000);
-				con.setReadTimeout(10 * 1000);
-				bitmap = BitmapFactory.decodeStream(con.getInputStream());
+				// URL url = new URL(imageUrl);
+				// con = (HttpURLConnection) url.openConnection();
+				// con.setConnectTimeout(5 * 1000);
+				// con.setReadTimeout(10 * 1000);
+				// bitmap = BitmapFactory.decodeStream(con.getInputStream());
+
+				FileOutputStream fos = null;
+				InputStream is = null;
+
+				/**
+				 * 将下载下来的图片进行压缩。
+				 */
+				try
+				{
+					URL url = new URL(imageUrl);
+					HttpURLConnection conn = (HttpURLConnection) url
+							.openConnection();
+					is = new BufferedInputStream(conn.getInputStream());
+
+					is.mark(is.available());
+
+					Options opts = new Options();
+					opts.inJustDecodeBounds = true;
+					bitmap = BitmapFactory.decodeStream(is, null, opts);
+
+					opts.inSampleSize = calculateInSampleSize(opts, 600, 600);
+
+					opts.inJustDecodeBounds = false;
+					is.reset();
+					bitmap = BitmapFactory.decodeStream(is, null, opts);
+
+					conn.disconnect();
+
+				} catch (Exception e)
+				{
+				}
+
 			} catch (Exception e)
 			{
 				e.printStackTrace();
@@ -295,6 +330,28 @@ public class PhotoWallAdapter extends ArrayAdapter<String> implements
 				}
 			}
 			return bitmap;
+		}
+
+		public int calculateInSampleSize(BitmapFactory.Options options,
+				int reqWidth, int reqHeight)
+		{
+			// 源图片的高度和宽度
+			final int height = options.outHeight;
+			final int width = options.outWidth;
+			int inSampleSize = 1;
+			if (height > reqHeight || width > reqWidth)
+			{
+				// 计算出实际宽高和目标宽高的比率
+				final int heightRatio = Math.round((float) height
+						/ (float) reqHeight);
+				final int widthRatio = Math.round((float) width
+						/ (float) reqWidth);
+				// 选择宽和高中最小的比率作为inSampleSize的值，这样可以保证最终图片的宽和高
+				// 一定都会大于等于目标的宽和高。
+				inSampleSize = heightRatio < widthRatio ? heightRatio
+						: widthRatio;
+			}
+			return inSampleSize;
 		}
 
 	}
