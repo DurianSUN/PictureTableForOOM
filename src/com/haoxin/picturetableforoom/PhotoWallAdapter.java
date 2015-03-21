@@ -23,6 +23,11 @@ import android.widget.ArrayAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
 
+/**
+ * 
+ * @author haondroid
+ * 
+ */
 public class PhotoWallAdapter extends ArrayAdapter<String> implements
 		OnScrollListener
 {
@@ -299,18 +304,26 @@ public class PhotoWallAdapter extends ArrayAdapter<String> implements
 					URL url = new URL(imageUrl);
 					HttpURLConnection conn = (HttpURLConnection) url
 							.openConnection();
+					con.setConnectTimeout(5 * 1000);
+					con.setReadTimeout(10 * 1000);
 					is = new BufferedInputStream(conn.getInputStream());
 
 					is.mark(is.available());
 
 					Options opts = new Options();
+
 					opts.inJustDecodeBounds = true;
+
 					bitmap = BitmapFactory.decodeStream(is, null, opts);
 
-					opts.inSampleSize = calculateInSampleSize(opts, 600, 600);
+					// 此处的目标分辨率，可以自己通过屏幕宽度/一行显示的图片数量得到需要的图片分辨率，最好通过代码实现。
+					// 通过代码获得屏幕的分辨率，然后设计自己需要展示的图片数量，计算出，目标图片分辨率，就可以直接传参进去了。
+					opts.inSampleSize = calculateInSampleSize(opts, 200, 200);
 
 					opts.inJustDecodeBounds = false;
+
 					is.reset();
+
 					bitmap = BitmapFactory.decodeStream(is, null, opts);
 
 					conn.disconnect();
